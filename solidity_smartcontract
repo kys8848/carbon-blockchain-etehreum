@@ -1,0 +1,102 @@
+pragma solidity ^0.4.14;
+//180705: Purpose to add a iotSolar's data processing procedeur
+//180813: add realtime iot metering fucntion , each account has unique iotsolar data
+
+contract CarbonCredit {
+    uint256 public totalCredit;
+    
+    //int genElec;  move to struct
+    address _address;
+    //bool iotSolar;
+    
+    struct UserDetail {
+        string userName;
+        bool solarElec;
+        uint blockNo;
+        uint time;
+        
+        
+    }
+    struct IotDetail {
+        int genElec;
+        uint iotblockNo;
+    }
+    
+    mapping(address => IotDetail) public iotDetail;
+    mapping(address => UserDetail) public userDetail;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => bool) public iotSolar;  // 
+    //생성자
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    
+    function CarbonCredit(uint256 _supply){
+        balanceOf[msg.sender] = _supply;
+        totalCredit = _supply;
+        
+    }
+    
+    function setUser(string _username){
+        userDetail[msg.sender].userName = _username;
+        userDetail[msg.sender].solarElec = iotSolar[msg.sender];
+        userDetail[msg.sender].blockNo = block.number;
+        userDetail[msg.sender].time = block.timestamp;
+    }
+    
+    function getMy() constant returns (string, bool, uint,uint ,uint,int) {
+        userDetail[msg.sender].solarElec = iotSolar[msg.sender];
+                return (userDetail[msg.sender].userName, 
+                        userDetail[msg.sender].solarElec, 
+                        userDetail[msg.sender].blockNo,
+                        userDetail[msg.sender].time,
+                        balanceOf[msg.sender]
+                        iotDetail[msg.sender].genElec);
+            }
+            
+    function getiot() constant returns (int,uint){
+        return (iotDetail[msg.sender].genElec,
+                iotDetail[msg.sender].iotblockNo);
+    }
+    
+    function getUser(address _address) constant returns (string, bool, uint,uint) {
+        userDetail[_address].solarElec = iotSolar[_address];
+        return (userDetail[_address].userName, 
+                userDetail[_address].solarElec, 
+                userDetail[_address].blockNo,
+                balanceOf[_address]);
+    }
+
+    function iot(int _genElec) returns (bool,int) {
+        //address iotAdress;//for what?
+        
+        iotDetail[msg.sender].genElec += _genElec;
+        iotDetail[msg.sender].iotblockNo = block.number;
+        //iotAdress = msg.sender;//also what?
+        int genElec2 = iotDetail[msg.sender].genElec;
+        if(_genElec > 0){
+        iotSolar[msg.sender] = true;
+        
+        }
+        else {
+            iotSolar[msg.sender] = false;
+        }
+        
+        return (iotSolar[msg.sender],genElec2); 
+     
+    }  //elecValue= master.iot()={iotSolar,genElec} -> elecvalue[1]="genElec" 
+    
+  
+    
+    //sender가 send 
+    function transfer(address _to, uint256 _value){  
+        if(balanceOf[msg.sender] < _value) throw ;
+        if(balanceOf[_to] + _value < balanceOf[_to]) throw;
+        if(iotSolar[_to] == false) throw;
+        
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
+        
+        Transfer(msg.sender, _to , _value);
+    }
+    
+}
+    
