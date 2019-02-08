@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8">
+	<title>블록체인 탄소거래_(관리자)</title>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+	<script type="text/javascript" src="./js/bignumber.min.js"></script>
+	<script type="text/javascript" src="./js/crypto-js.js"></script>
+	<script type="text/javascript" src="./js/utf8.js"></script>
+	<script type="text/javascript" src="./js/web3.min.js"></script>
+	<script>
+	// 연결할JSON-RPC서버(가상 머신)의 IP 주소 및 포트 번호
+	var url = "http://127.0.0.1:8545"
+	var user_name;
+	var web3 = new Web3();
+	var provider = new web3.providers.HttpProvider(url)
+	web3.setProvider(provider);
+	web3.eth.defaultAccount = web3.eth.accounts[0];
+	var ABI = [ { "constant": true, "inputs": [ { "name": "", "type": "address" } ], "name": "userDetail", "outputs": [ { "name": "userName", "type": "string" }, { "name": "solarElec", "type": "bool" }, { "name": "blockNo", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "totalCredit", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "name": "_address", "type": "address" } ], "name": "getUser", "outputs": [ { "name": "", "type": "string" }, { "name": "", "type": "bool" }, { "name": "", "type": "uint256" }, { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "getMy", "outputs": [ { "name": "", "type": "string" }, { "name": "", "type": "bool" }, { "name": "", "type": "uint256" }, { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "name": "", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "from", "type": "address" }, { "indexed": true, "name": "to", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" } ], "name": "Transfer", "type": "event" }, { "constant": false, "inputs": [ { "name": "_genElec", "type": "int256" } ], "name": "iot", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "name": "_username", "type": "string" } ], "name": "setUser", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "transfer", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "inputs": [ { "name": "_supply", "type": "uint256" } ], "payable": false, "stateMutability": "nonpayable", "type": "constructor" } ];
+    var abiAdress = "0xb15ce2ba7ee659c38de613390ed56fe427bda30d";
+	var master = web3.eth.contract(ABI).at(abiAdress);
+    
+
+	// 로그인(Unlock) - json-rpc에 보낼 파라미터 정의
+	function login() {
+	user_name = $("#userName").val(); //입력받을 사용자 주소
+	var password = $("#password").val(); //주소의 패스워드
+	var JSONdata = createJSONdata("personal_unlockAccount", [ user_name, password, 3600 ]);
+	//json-rpc 실행 (초기)  geth 에 접속한뒤 init실행
+	executeJsonRpc(url, JSONdata, function success(data) { 
+		// 로그인 성공
+		if (data.error == null) {
+			console.log("login success!");
+            
+		} else {
+			// 로그인 실패
+			console.log("login error1");
+		}
+		init();
+        var x = "로그인&초기화"
+            alert(x);
+		}, function error(data) {
+			// 로그인 실패
+			console.log("login error2");
+		});
+    }
+	// 초기화
+	function init() {
+	web3.eth.defaultAccount = user_name;
+    master    
+    }
+    
+
+	function refresh() {
+		web3.eth.defaultAccount = user_name;
+		init();
+	}
+	
+
+	// JSON 메시지 생성
+	function createJSONdata(method, params) {
+		var JSONdata = {
+			"jsonrpc" : "2.0",
+			"method" : method,
+			"params" : params
+			};
+		return JSONdata;
+	}
+	// JSON-RPC 실행  : 잘모르겠다 function(data)부분이 무슨  목적으로 어떤 역할을 수행하는지 당최 알수가 없다
+	function executeJsonRpc(url_exec, JSONdata, success, error) {
+		$.ajax({
+			type : 'post',
+			url : url_exec,
+			data : JSON.stringify(JSONdata),
+			contentType : 'application/JSON',
+			dataType : 'JSON',
+			scriptCharset : 'utf-8',
+			success : function(data) {
+				success(data);
+			},
+			error : function(data) {
+				error(data);
+			}
+		});
+	}
+    
+    
+
+    function call(){
+        web3.eth.defaultAccount = user_name;
+        var getmy = master.getMy();
+        for(var i=0; i < 4 ; i++){
+            document.myForm["a"+i].value = getmy[i];
+        }
+    }
+
+    function getuser() {
+        web3.eth.defaultAccount = user_name;
+        _address = $("#address").val();
+        var getuser = master.getUser(_address);
+        for(var i=0; i < 4 ; i++){
+            document.myForm2["a"+i].value = getuser[i];
+        }
+    }
+
+	// 거래권거래 기능
+    function transfer() {
+		user_name = $("#userName").val(); //입력받을 사용자 주소
+		var password = $("#password").val(); //주소의 패스워드
+        web3.personal.unlockAccount(user_name,password,
+			function(err, res){
+				if(err){
+					throw err;
+				}else{console.log('unlock & tracation성공');
+				return res;}
+			}
+		
+		);
+	
+        var _tto = $("#tto").val();
+        var _vvalue = $("#vvalue").val();
+        master.transfer(_tto, _vvalue);
+        alert(_vvalue+"가 성공 전송 되었습니다"+"\n"+"거래 승인에는 7~20초 가량 소요됩니다");
+
+
+    }
+	</script>
+</head>
+<body>
+    <hr>
+	<p> 
+	사용자명:&nbsp;<input type="text" id="userName" value="0x16cc03e13edc4309ccede2ee20e8b8096fc37a34">&nbsp; 
+	패스워드:&nbsp;<input type="text" id="password" value="pass0">&nbsp; <input type="button" value="login" onclick="login();" /> 
+	</p>
+	<hr>
+	<div style="border: 1px solid purple">
+	<fieldset>
+	<legend><h3>탄소배출권 거래</h3></legend>
+    보낼사람:&nbsp;<input type="text" id="tto" >&nbsp;<br>
+    보낼액수:&nbsp;<input type="text" id="vvalue">&nbsp; <input type="button" value="전송" onclick="transfer();" /> 
+    <p>
+	</fieldset>
+	<br>
+	<fieldset>
+    <legend><h3>탄소배출권 조회</h3></legend>
+    조회주소:&nbsp;<input type="text" id="address" value="0xc58215d0903871af100cb5608d1a9a6b67611ad6">&nbsp;
+    <input type="button" value="조회" onclick="getuser();" />
+    <form name="myForm2">
+            가입자명:&nbsp;<input type="text" name="a0"><br />
+            IoT발전여부:&nbsp;<input type="text" name="a1"><br />
+            등록블록번호:&nbsp;<input type="text" name="a2"><br />
+            탄소배출권 보유량:&nbsp;<input type="text" name="a3"><br />    
+    </form>
+	</fieldset>
+	<br>
+	<fieldset>
+	<legend><h3>탄소배출권 내정보 조회</h3></legend>
+    <form name="myForm">
+        <input type="button" value="내정보 조회" onclick="call();"><br/>
+        가입자명:&nbsp;<input type="text" name="a0"><br />
+        IoT발전여부:&nbsp;<input type="text" name="a1"><br />
+        등록블록번호:&nbsp;<input type="text" name="a2"><br />
+        탄소배출권 보유량:&nbsp;<input type="text" name="a3"><br />    
+	</form>
+	</fieldset>
+	<br>
+	</div>
+    
+
+
+</body>
+</html>

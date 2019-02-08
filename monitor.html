@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>모니터링 도구</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+<script type="text/javascript" src="./js/bignumber.min.js"></script>
+<script type="text/javascript" src="./js/crypto-js.js"></script>
+<script type="text/javascript" src="./js/utf8.js"></script>
+<script type="text/javascript" src="./js/web3.min.js"></script>
+<script>
+var web3 = new Web3();
+var provider = new web3.providers.HttpProvider("http://localhost:8545");
+web3.setProvider(provider);
+web3.eth.defaultAccount = web3.eth.accounts[0];
+var stop = false;
+
+// 감시 개시
+function startMonitor() {
+	stop = false;
+	var lines = $("#line").val();
+	//입력된 수 만큼 가장 최근 블록순으로 조회(5000블럭 이상은 시간이 많이 걸림)
+	var startBlockNo = web3.eth.blockNumber - lines;
+	var table = document.getElementById('list');
+	var i = startBlockNo;
+	for (; i < web3.eth.blockNumber; i++) {
+		var result = web3.eth.getBlock(i);
+		insertBlockRow(result, table, i);
+	}
+	setTimeout(function() {
+	watchBlock(table, i);
+	}, 10000);
+	console.log(table);
+
+}
+
+// 블록 감시 -->자바스크립트의 setTimeout 함수 의 사용 
+function watchBlock(table, blockNumber) {
+	if (stop) {
+		return;
+	}
+	if (blockNumber == web3.eth.blockNumber) {
+		setTimeout(function() {
+		watchBlock(table, blockNumber);
+		}, 10000);
+	return;
+	}
+	var result = web3.eth.getBlock(blockNumber);
+	insertBlockRow(result, table, blockNumber);
+	setTimeout(function() {
+	watchBlock(table, ++blockNumber);
+	}, 10000);
+}
+
+// 행 추가 블록 정보 편집
+function insertBlockRow(result, table) {
+	var row = table.insertRow();
+	var td = row.insertCell(0);
+	td.innerHTML = result.number;
+	var td = row.insertCell(1);
+	td.innerHTML = new Date(parseInt(result.timestamp, 16) * 1000).toString();
+	var td = row.insertCell(2);
+	td.innerHTML = result.hash;
+	var td = row.insertCell(3);
+	td.innerHTML = result.nonce;
+	var td = row.insertCell(4);
+	if (result.transactions.length > 0) {
+	insertTranRow(result.transactions, td);
+	}
+}
+
+// 행 추가 트랜잭션 정보 편집
+function insertTranRow(transactions, td) {
+	var allData = "";
+	for (var i = 0; i < transactions.length; i++) {
+		var data = web3.eth.getTransaction(transactions[i]);
+		allData += JSON.stringify(data);
+	}
+	td.innerHTML = "<input type='text' value='" + allData + "' /></td>";
+}
+
+// 정지
+function stopWatch() {
+	stop = true;
+}
+</script>
+</head>
+<body>
+	<hr>
+	조회블록개수:&nbsp;<input type="text" id="line" value="100" >
+	<hr>
+	<input type="button" value="start" onclick="startMonitor();" />
+	<input type="button" value="stop" onclick="stopWatch();" />
+	<table id="list" border="1">
+		<tr>
+			<th>Block<br />Number</th>
+			<th>TimeStamp</th>
+			<th>BlockHash</th>
+			<th>Nonce</th>
+			<th>Transaction</th>
+		</tr>
+	</table>
+</body>
+</html>
